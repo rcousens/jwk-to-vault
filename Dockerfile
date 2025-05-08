@@ -14,5 +14,5 @@ ARG GIT_TAG=unspecified
 LABEL org.opencontainers.image.authors="Besmir Zanaj"
 LABEL org.opencontainers.image.revision=$GIT_COMMIT
 LABEL org.opencontainers.image.version="$GIT_TAG"
-COPY --from=0 /build/target/json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar ./json-web-key-generator.jar
-ENTRYPOINT ["java", "-jar", "json-web-key-generator.jar"]
+COPY --from=0 /build/target/jwk-to-vault-0.9-SNAPSHOT-jar-with-dependencies.jar ./json-web-key-generator.jar
+ENTRYPOINT ["java", "-jar", "jwk-to-vault.jar"]
