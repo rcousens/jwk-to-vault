@@ -4,12 +4,12 @@ A commandline Java-based generator for JSON Web Keys (JWK) and JSON Private/Shar
 
 ## Standalone run
 
-To compile, run `mvn package`. This will generate a `json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar` in the `/target` directory.
+To compile, run `mvn package`. This will generate a `jwk-to-vault-0.9-SNAPSHOT-jar-with-dependencies.jar` in the `/target` directory.
 
-To generate a key, run `java -jar target/json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar`.
+To generate a key, run `java -jar target/jwk-to-vault-0.9-SNAPSHOT-jar-with-dependencies.jar`.
 
 ```
-usage: java -jar json-web-key-generator.jar [options]
+usage: java -jar jwk-to-vault.jar [options]
  -p,--path <arg>           Vault path to write private key in PEM format to
  -h,--help                 Print help
 ```
@@ -23,7 +23,7 @@ Example:
 ```bash
 # Optional TAG
 #TAG="your/tag:here"
-# Example: TAG="<your_docker_id>/json-web-key-generator:latest"
+# Example: TAG="<your_docker_id>/jwk-to-vault:latest"
 $ docker build -t $TAG .
 ```
 
@@ -33,11 +33,11 @@ in the docker image label.
 ```bash
 TAG=$(git describe --abbrev=0 --tags)
 REV=$(git log -1 --format=%h)
-docker build -t <your_docker_id>/json-web-key-generator:$TAG --build-arg GIT_COMMIT=$REV --build-arg GIT_TAG=$TAG .
-docker push <your_docker_id>/json-web-key-generator:$TAG
+docker build -t <your_docker_id>/jwk-to-vault:$TAG --build-arg GIT_COMMIT=$REV --build-arg GIT_TAG=$TAG .
+docker push <your_docker_id>/jwk-to-vault:$TAG
 
 # or push all the tags
-docker push <your_docker_id>/json-web-key-generator --all-tags
+docker push <your_docker_id>/jwk-to-vault --all-tags
 ```
 
 ### Run from docker
@@ -45,7 +45,7 @@ docker push <your_docker_id>/json-web-key-generator --all-tags
 Example of running the app  within a docker container to generate a 2048 bit RSA JWK.
 
 ```bash
-$ docker run --rm <your_docker_id>/json-web-key-generator:latest -p dev/app/jwks
+$ docker run --rm <your_docker_id>/jwk-to-vault:latest -p dev/app/jwks
 Generating key...
 Displaying keys in JWK format...
 Public key:

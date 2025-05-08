@@ -2,11 +2,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.swyftx</groupId>
-	<artifactId>json-web-key-generator</artifactId>
+	<artifactId>jwk-to-vault</artifactId>
 	<version>0.9-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>json-web-key-generator</name>
+	<name>jwk-to-vault</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -15,9 +15,9 @@
 	</properties>
 
 	<scm>
-		<connection>scm:git:https://github.com/rcousens/json-web-key-generator.git</connection>
-		<developerConnection>scm:git:git@github.com:rcousens/json-web-key-generator.git</developerConnection>
-		<url>https://github.com/rcousens/json-web-key-generator.git</url>
+		<connection>scm:git:https://github.com/rcousens/jwk-to-vault.git</connection>
+		<developerConnection>scm:git:git@github.com:rcousens/jwk-to-vault.git</developerConnection>
+		<url>https://github.com/rcousens/jwk-to-vault.git</url>
 		<tag>HEAD</tag>
 	</scm>
 
