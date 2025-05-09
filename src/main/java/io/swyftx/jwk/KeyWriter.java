@@ -10,7 +10,7 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.security.AsymmetricKey;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -182,7 +182,7 @@ public class KeyWriter {
      *
      * @param key The public or private key to display
      */
-    private static void writeKeyToConsole(AsymmetricKey key) {
+    private static void writeKeyToConsole(Key key) {
         try {
             System.out.println(); // spacer
 

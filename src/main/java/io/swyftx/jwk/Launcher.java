@@ -1,6 +1,7 @@
 package io.swyftx.jwk;
 
 // Standard Java Security & Crypto
+
 import java.security.Security;
 
 // Standard Java Collections
@@ -8,6 +9,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // Apache Commons CLI
 import org.apache.commons.cli.CommandLine;
@@ -38,129 +40,175 @@ import com.google.common.base.Strings;
  */
 public class Launcher {
 
-	private static Options options;
+    private static Options options;
+    private static List<String> secretType = ImmutableList.of(
+        "eightcap",
+        "jwks"
+    );
 
-	public static void main(String[] args) {
-		Security.addProvider(new BouncyCastleProvider());
+    public static void main(String[] args) {
+        Security.addProvider(new BouncyCastleProvider());
 
-		options = new Options();
-		configureCommandLineOptions(options);
+        options = new Options();
+        configureCommandLineOptions(options);
 
-		try {
-			CommandLineOptions parsedOptions = parseCommandLineOptions(args);
-            System.out.println("Generating key...");
-            JWK jwk = KeyGenerator.makeKey(
-				parsedOptions.size,
-				parsedOptions.generator,
-				parsedOptions.keyUse,
-				parsedOptions.keyAlg
-			);
+        CommandLineOptions parsedOptions = null;
 
-            System.out.println("Displaying keys in JWK format...");
-			KeyWriter.displayJWK(
-                jwk,
-				true,
-				false,
-				true
-			);
+        try {
+            parsedOptions = parseCommandLineOptions(args);
+        } catch (ParseException e) {
+            throw printUsageAndExit("Failed to parse arguments: " + e.getMessage());
+        } catch (java.text.ParseException e) {
+            throw printUsageAndExit("Could not parse existing KeySet: " + e.getMessage());
+        }
 
-            System.out.println("Displaying keys in PEM format...");
-            KeyWriter.displayPEM(
-                jwk,
-                false,
-                true
-            );
+        if (parsedOptions.secretType.equals("jwks")) {
+            try {
+                System.out.println("Generating key...");
+                JWK jwk = KeyGenerator.makeKey(
+                    parsedOptions.size,
+                    parsedOptions.generator,
+                    parsedOptions.keyUse,
+                    parsedOptions.keyAlg
+                );
+
+                System.out.println("Displaying keys in JWK format...");
+                KeyWriter.displayJWK(
+                    jwk,
+                    true,
+                    false,
+                    true
+                );
+
+                System.out.println("Displaying keys in PEM format...");
+                KeyWriter.displayPEM(
+                    jwk,
+                    false,
+                    true
+                );
 
 
-            // Initialize Vault client and perform update secret operation
-            System.out.println("Storing private key in vault...");
-            VaultClient vaultClient = new VaultClient();
-            if (vaultClient.initialize()) {
-                Map<String, Object> secretData = new HashMap<>();
-                secretData.put("GEN2_BALANCE_SERVICE_PRIVATE_KEY", KeyWriter.privateKeyToString(jwk.toRSAKey().toPrivateKey()));
-                vaultClient.writeSecret(parsedOptions.secretPath, secretData);
+                // Initialize Vault client and perform update secret operation for JWKS
+                if (Strings.isNullOrEmpty(parsedOptions.secretPath)) {
+                    System.out.println("Private key discarded as no Vault path was specified");
+                } else {
+                    System.out.println("Storing private key in Vault...");
+                    VaultClient vaultClient = new VaultClient();
+                    if (vaultClient.initialize()) {
+                        Map<String, Object> secretData = new HashMap<>();
+                        secretData.put("GEN2_BALANCE_SERVICE_PRIVATE_KEY", KeyWriter.privateKeyToString(jwk.toRSAKey().toPrivateKey()));
+                        vaultClient.writeSecret(parsedOptions.secretPath, secretData);
+                    }
+                }
+
+
+            } catch (NumberFormatException e) {
+                throw printUsageAndExit("Invalid key size: " + e.getMessage());
+            } catch (IllegalArgumentException e) {
+                throw printUsageAndExit(e.getMessage());
+            } catch (Exception e) {
+                throw printUsageAndExit("Unexpected error: " + e.getMessage());
             }
+        }
 
-        } catch (NumberFormatException e) {
-			throw printUsageAndExit("Invalid key size: " + e.getMessage());
-		} catch (ParseException e) {
-			throw printUsageAndExit("Failed to parse arguments: " + e.getMessage());
-		} catch (java.text.ParseException e) {
-			throw printUsageAndExit("Could not parse existing KeySet: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            throw printUsageAndExit(e.getMessage());
-        } catch (Exception e) {
-            throw printUsageAndExit("Unexpected error: " + e.getMessage());
+        if (parsedOptions.secretType.equals("eightcap")) {
+            System.out.println("Please enter the Eightcap credentials below. Note, these are masked input fields and entered text will not be visible on the screen.");
+            char[] eightcapEntityIdChars = System.console().readPassword("Enter Eightcap Entity ID: ");
+            String eightcapEntityId = new String(eightcapEntityIdChars);
+            char[] eightcapUsernameChars = System.console().readPassword("Enter Eightcap Username: ");
+            String eightcapUsername = new String(eightcapUsernameChars);
+            char[] eightcapPasswordChars = System.console().readPassword("Enter Eightcap Password: ");
+            String eightcapPassword = new String(eightcapPasswordChars);
+
+            if (Strings.isNullOrEmpty(parsedOptions.secretPath)) {
+                System.out.println("Private key discarded as no Vault path was specified");
+            } else {
+                System.out.println("Storing private key in Vault...");
+                VaultClient vaultClient = new VaultClient();
+                if (vaultClient.initialize()) {
+                    Map<String, Object> secretData = new HashMap<>();
+                    secretData.put("EIGHTCAP_ENTITY_ID", eightcapEntityId);
+                    secretData.put("EIGHTCAP_USERNAME", eightcapUsername);
+                    secretData.put("EIGHTCAP_PASSWORD", eightcapPassword);
+                    vaultClient.writeSecret(parsedOptions.secretPath, secretData);
+                }
+            }
         }
     }
 
-	/**
-	 * Parse command line arguments
-	 *
-	 * @param args Command line arguments
-	 * @return Parsed command line options
-	 * @throws ParseException If parsing fails
-	 * @throws java.text.ParseException If key usage parsing fails
-	 */
-	private static CommandLineOptions parseCommandLineOptions(String[] args) throws ParseException, java.text.ParseException {
-		CommandLineParser parser = new DefaultParser();
-		CommandLine cmd = parser.parse(options, args);
+    /**
+     * Parse command line arguments
+     *
+     * @param args Command line arguments
+     * @return Parsed command line options
+     * @throws ParseException           If parsing fails
+     * @throws java.text.ParseException If key usage parsing fails
+     */
+    private static CommandLineOptions parseCommandLineOptions(String[] args) throws ParseException, java.text.ParseException {
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
 
-		CommandLineOptions result = new CommandLineOptions();
+        CommandLineOptions result = new CommandLineOptions();
 
         if (cmd.hasOption("h")) {
             throw printUsageAndExit("Vault JWKS Generator\n");
         }
 
-		result.size = "2048";
-		result.secretPath = cmd.getOptionValue("p");
+        result.secretType = validateSecretType(cmd.getOptionValue("s"));
+        result.size = "2048";
+        result.secretPath = cmd.getOptionValue("p");
         result.generator = KeyIdGenerator.specified("sha256");
-		result.keyType = KeyType.parse("RSA");
-		result.keyUse =  KeyUse.parse("sig");
+        result.keyType = KeyType.parse("RSA");
+        result.keyUse = KeyUse.parse("sig");
         result.keyAlg = JWSAlgorithm.parse("RS256");
+        return result;
+    }
 
-        if (Strings.isNullOrEmpty(result.secretPath)) {
-            result.secretPath = "dev/test/ross";
+    private static String validateSecretType(String parsedSecretType) {
+        if (!secretType.contains(parsedSecretType)) {
+            throw printUsageAndExit("Invalid secret type: " + (parsedSecretType == null ? "none supplied" : parsedSecretType));
         }
-		return result;
-	}
-
-	/**
-	 * Class to hold parsed command line options
-	 */
-	private static class CommandLineOptions {
-		String size;
-        String secretPath;
-		KeyIdGenerator generator;
-		KeyType keyType;
-		KeyUse keyUse;
-		Algorithm keyAlg;
-	}
+        return parsedSecretType;
+    }
 
     /**
-     *
+     * Class to hold parsed command line options
+     */
+    private static class CommandLineOptions {
+        String size;
+        String secretPath;
+        String secretType;
+        KeyIdGenerator generator;
+        KeyType keyType;
+        KeyUse keyUse;
+        Algorithm keyAlg;
+    }
+
+    /**
      * @param options Options to configure
      */
-	private static void configureCommandLineOptions(Options options) {
-		options.addOption("h", "help", false, "Print this help message");
-        options.addOption("p", "path", true, "Vault path to write secret to");
-	}
+    private static void configureCommandLineOptions(Options options) {
+        options.addOption("h", "help", false, "Print this help message");
+        options.addOption("p", "path", true, "Vault path to write secret to, if not supplied no vault secret will be written");
+        options.addOption("s", "secret", true, "Secret type to update. Can be one of: " + String.join(", ", secretType));
+    }
 
-	// print out a usage message and quit
-	// return exception so that we can "throw" this for control flow analysis
-	private static IllegalArgumentException printUsageAndExit(String message) {
-		if (message != null) {
-			System.err.println(message);
-		}
+    // print out a usage message and quit
+    // return exception so that we can "throw" this for control flow analysis
+    private static IllegalArgumentException printUsageAndExit(String message) {
+        if (message != null) {
+            System.err.println(message);
+        }
 
-		List<String> optionOrder = ImmutableList.of("p", "h");
+        List<String> optionOrder = ImmutableList.of("p", "h", "s");
 
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.setOptionComparator(Comparator.comparingInt(o -> optionOrder.indexOf(o.getOpt())));
-		formatter.printHelp("java -jar json-web-key-generator.jar [options]", options);
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.setWidth(120);
+        formatter.setOptionComparator(Comparator.comparingInt(o -> optionOrder.indexOf(o.getOpt())));
+        formatter.printHelp("java -jar jwk-to-vault.jar -s [secretType] [options]", options);
 
-		// kill the program
-		System.exit(1);
-		return new IllegalArgumentException("Program was called with invalid arguments");
-	}
+        // kill the program
+        System.exit(1);
+        return new IllegalArgumentException("Program was called with invalid arguments");
+    }
 }

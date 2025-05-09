@@ -9,9 +9,10 @@ To compile, run `mvn package`. This will generate a `jwk-to-vault-0.9-SNAPSHOT-j
 To generate a key, run `java -jar target/jwk-to-vault-0.9-SNAPSHOT-jar-with-dependencies.jar`.
 
 ```
-usage: java -jar jwk-to-vault.jar [options]
- -p,--path <arg>           Vault path to write private key in PEM format to
- -h,--help                 Print help
+usage: java -jar jwk-to-vault.jar -s [secretType] [options]
+ -p,--path <arg>     Vault path to write secret to, if not supplied no vault secret will be written
+ -h,--help           Print this help message
+ -s,--secret <arg>   Secret type to update. Can be one of: eightcap, jwks
 ```
 
 ## Docker
@@ -45,7 +46,7 @@ docker push <your_docker_id>/jwk-to-vault --all-tags
 Example of running the app  within a docker container to generate a 2048 bit RSA JWK.
 
 ```bash
-$ docker run --rm <your_docker_id>/jwk-to-vault:latest -p dev/app/jwks
+$ docker run --rm <your_docker_id>/jwk-to-vault:latest -s jwks -p dev/app/jwks
 Generating key...
 Displaying keys in JWK format...
 Public key:

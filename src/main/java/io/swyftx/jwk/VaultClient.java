@@ -58,7 +58,7 @@ public class VaultClient {
                 VaultEndpoint vaultEndpoint = VaultEndpoint.from(new URI(vaultUri));
                 ClientAuthentication clientAuthentication = new TokenAuthentication(vaultToken);
                 vaultTemplate = new VaultTemplate(vaultEndpoint, clientAuthentication);
-                System.out.println("VaultTemplate initialized successfully.");
+                System.out.println("Vault Client initialized successfully.");
                 return true;
             } catch (URISyntaxException e) {
                 System.err.println("Invalid Vault URI syntax: " + vaultUri + ". Error: " + e.getMessage());

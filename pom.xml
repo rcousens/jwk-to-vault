@@ -11,7 +11,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>24</java.version>
+        <java.version>21</java.version>
 	</properties>
 
 	<scm>
@@ -47,8 +47,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.14.0</version>
                 <configuration>
-					<source>24</source>
-					<target>24</target>
+					<source>21</source>
+					<target>21</target>
 				</configuration>
 			</plugin>
 			<plugin>
