@@ -9,7 +9,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 // Apache Commons CLI
 import org.apache.commons.cli.CommandLine;
@@ -41,7 +40,7 @@ import com.google.common.base.Strings;
 public class Launcher {
 
     private static Options options;
-    private static List<String> secretType = ImmutableList.of(
+    private static final List<String> secretType = ImmutableList.of(
         "eightcap",
         "jwks"
     );
@@ -157,7 +156,7 @@ public class Launcher {
         result.secretType = validateSecretType(cmd.getOptionValue("s"));
         result.size = "2048";
         result.secretPath = cmd.getOptionValue("p");
-        result.generator = KeyIdGenerator.specified("sha256");
+        result.generator = KeyIdGenerator.get("sha256");
         result.keyType = KeyType.parse("RSA");
         result.keyUse = KeyUse.parse("sig");
         result.keyAlg = JWSAlgorithm.parse("RS256");
