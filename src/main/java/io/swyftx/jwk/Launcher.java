@@ -164,6 +164,12 @@ public class Launcher {
                 String publicKeyContent = new String(java.nio.file.Files.readAllBytes(
                         java.nio.file.Paths.get("cosign.pub")), java.nio.charset.StandardCharsets.UTF_8);
 
+                // Display the public key to the terminal
+                System.out.println("\nCosign Public Key:");
+                System.out.println("------------------");
+                System.out.println(publicKeyContent);
+                System.out.println("------------------\n");
+
                 // Delete the files from the filesystem
                 java.nio.file.Files.delete(java.nio.file.Paths.get("cosign.key"));
                 java.nio.file.Files.delete(java.nio.file.Paths.get("cosign.pub"));
