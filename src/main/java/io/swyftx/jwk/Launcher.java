@@ -1,7 +1,11 @@
 package io.swyftx.jwk;
 
-// Standard Java Security & Crypto
+// Standard Java IO
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
+// Standard Java Security & Crypto
 import java.security.Security;
 
 // Standard Java Collections
@@ -42,7 +46,8 @@ public class Launcher {
     private static Options options;
     private static final List<String> secretType = ImmutableList.of(
         "eightcap",
-        "jwks"
+        "jwks",
+        "cosign"
     );
 
     public static void main(String[] args) {
@@ -131,6 +136,63 @@ public class Launcher {
                     secretData.put("EIGHTCAP_PASSWORD", eightcapPassword);
                     vaultClient.writeSecret(parsedOptions.secretPath, secretData);
                 }
+            }
+        }
+
+        if (parsedOptions.secretType.equals("cosign")) {
+            try {
+                System.out.println("Generating cosign key pair...");
+
+                // Set up environment with COSIGN_PASSWORD as empty string
+                ProcessBuilder processBuilder = new ProcessBuilder("cosign", "generate-key-pair");
+                Map<String, String> env = processBuilder.environment();
+                env.put("COSIGN_PASSWORD", "");
+
+                // Execute the cosign command
+                Process process = processBuilder.start();
+                int exitCode = process.waitFor();
+
+                if (exitCode != 0) {
+                    throw new RuntimeException("Cosign command failed with exit code: " + exitCode);
+                }
+
+                System.out.println("Cosign key pair generated successfully");
+
+                // Read the generated files into memory
+                String privateKeyContent = new String(java.nio.file.Files.readAllBytes(
+                        java.nio.file.Paths.get("cosign.key")), java.nio.charset.StandardCharsets.UTF_8);
+                String publicKeyContent = new String(java.nio.file.Files.readAllBytes(
+                        java.nio.file.Paths.get("cosign.pub")), java.nio.charset.StandardCharsets.UTF_8);
+
+                // Delete the files from the filesystem
+                java.nio.file.Files.delete(java.nio.file.Paths.get("cosign.key"));
+                java.nio.file.Files.delete(java.nio.file.Paths.get("cosign.pub"));
+
+                System.out.println("Cosign key files loaded into memory and removed from filesystem");
+
+                // Store in Vault if path is provided
+                if (Strings.isNullOrEmpty(parsedOptions.secretPath)) {
+                    System.out.println("Cosign keys discarded as no Vault path was specified");
+                } else {
+                    System.out.println("Storing cosign keys in Vault...");
+                    VaultClient vaultClient = new VaultClient();
+                    if (vaultClient.initialize()) {
+                        Map<String, Object> secretData = new HashMap<>();
+                        secretData.put("privateKey", privateKeyContent);
+                        secretData.put("password", "");
+                        secretData.put("publicKey", publicKeyContent);
+                        vaultClient.writeSecret(parsedOptions.secretPath, secretData);
+                        System.out.println("Cosign keys successfully stored in Vault at: " + parsedOptions.secretPath);
+                    }
+                }
+
+            } catch (IOException e) {
+                throw printUsageAndExit("Failed to read cosign key files: " + e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw printUsageAndExit("Cosign process was interrupted: " + e.getMessage());
+            } catch (Exception e) {
+                throw printUsageAndExit("Unexpected error during cosign key generation: " + e.getMessage());
             }
         }
     }
